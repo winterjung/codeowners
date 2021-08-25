@@ -1,0 +1,7 @@
+run:
+  timeout: 3m
+linters:
+  enable:
+    - gomodguard
+    - ifshort
+    - exportloopref

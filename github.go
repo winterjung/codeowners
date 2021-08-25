@@ -41,7 +41,7 @@ func ListActivatedRepositories(ctx context.Context, cli *github.Client, owner st
 	for {
 		rr, resp, err := cli.Repositories.ListByOrg(ctx, owner, opt)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, errors.Wrap(err, "cli.Repositories.ListByOrg")
 		}
 		allRepos = append(allRepos, rr...)
 
@@ -63,7 +63,18 @@ func ListActivatedRepositories(ctx context.Context, cli *github.Client, owner st
 	return filtered, nil
 }
 
-func GetCodeownersContent(ctx context.Context, cli *github.Client, r *github.Repository, ref *string) (*github.RepositoryContent, error) {
+func GetCodeownersContent(ctx context.Context, cli *github.Client, r *github.Repository) (*github.RepositoryContent, error) {
+	// If codeowner updating branch is already exist, use it's ref
+	exist, err := isBranchExists(cli, ctx, r, prBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	var ref *string
+	if exist {
+		ref = github.String("refs/heads/" + prBranch)
+	}
+
 	fc, err := getContent(ctx, cli, r, ".github/CODEOWNERS", ref)
 	if err != nil {
 		if errors.Cause(err) == ErrNotFound {
@@ -78,7 +89,7 @@ func GetCodeownersContent(ctx context.Context, cli *github.Client, r *github.Rep
 	return fc, nil
 }
 
-func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, old *github.RepositoryContent, newContent string) error {
+func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, old *github.RepositoryContent, newContent string, commitMsg *string) error {
 	var (
 		owner = r.GetOwner().GetLogin()
 		name  = r.GetName()
@@ -90,7 +101,7 @@ func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, 
 	if !exist {
 		mainRef, _, err := cli.Git.GetRef(ctx, owner, name, "refs/heads/"+r.GetDefaultBranch())
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.Wrap(err, "cli.Git.GetRef")
 		}
 
 		prRef := &github.Reference{
@@ -101,23 +112,26 @@ func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, 
 		}
 
 		if _, _, err := cli.Git.CreateRef(ctx, owner, name, prRef); err != nil {
-			return errors.WithStack(err)
+			return errors.Wrap(err, "cli.Git.CreateRef")
 		}
 	}
 
+	if commitMsg == nil {
+		commitMsg = github.String("Update codeowners")
+	}
 	opt := &github.RepositoryContentFileOptions{
-		Message: github.String("Update codeowners"),
+		Message: commitMsg,
 		Content: []byte(newContent),
 		SHA:     github.String(old.GetSHA()),
 		Branch:  github.String(prBranch),
 	}
 	if _, _, err := cli.Repositories.CreateFile(ctx, owner, name, old.GetPath(), opt); err != nil {
-		return errors.WithStack(err)
+		return errors.Wrap(err, "cli.Repositories.CreateFile")
 	}
 	return nil
 }
 
-func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTitle, head, body string) (*github.PullRequest, error) {
+func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTitle, head, body string, reviewReq *github.ReviewersRequest) (*github.PullRequest, error) {
 	req := &github.NewPullRequest{
 		Title: github.String(prTitle),
 		Head:  github.String(head),
@@ -127,7 +141,13 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 	}
 	pr, _, err := cli.PullRequests.Create(ctx, r.GetOwner().GetLogin(), r.GetName(), req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "cli.PullRequests.Create")
+	}
+
+	if reviewReq != nil {
+		if _, _, err := cli.PullRequests.RequestReviewers(ctx, r.GetOwner().GetLogin(), r.GetName(), pr.GetNumber(), *reviewReq); err != nil {
+			return nil, errors.Wrap(err, "cli.PullRequests.RequestReviewers")
+		}
 	}
 	return pr, nil
 }
@@ -138,7 +158,7 @@ func isBranchExists(cli *github.Client, ctx context.Context, r *github.Repositor
 		if res != nil && res.StatusCode == http.StatusNotFound {
 			return false, nil
 		}
-		return false, errors.WithStack(err)
+		return false, errors.Wrap(err, "cli.Repositories.GetBranch")
 	}
 
 	return true, nil
@@ -155,9 +175,9 @@ func getContent(ctx context.Context, cli *github.Client, r *github.Repository, p
 	fc, _, res, err := cli.Repositories.GetContents(ctx, r.GetOwner().GetLogin(), r.GetName(), path, opt)
 	if err != nil {
 		if res != nil && res.StatusCode == http.StatusNotFound {
-			return nil, errors.WithStack(ErrNotFound)
+			return nil, errors.Wrap(ErrNotFound, "cli.Repositories.GetContents")
 		}
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "cli.Repositories.GetContents")
 	}
 
 	return fc, nil

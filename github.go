@@ -3,6 +3,7 @@ package codeowners
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v35/github"
 	"github.com/pkg/errors"
@@ -139,8 +140,11 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 		Body:  github.String(body),
 		Draft: github.Bool(false),
 	}
-	pr, _, err := cli.PullRequests.Create(ctx, r.GetOwner().GetLogin(), r.GetName(), req)
+	pr, resp, err := cli.PullRequests.Create(ctx, r.GetOwner().GetLogin(), r.GetName(), req)
 	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusUnprocessableEntity && strings.Contains(err.Error(), "A pull request already exists") {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "cli.PullRequests.Create")
 	}
 

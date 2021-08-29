@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/google/go-github/v35/github"
 	"github.com/pkg/errors"
-
 	log "github.com/sirupsen/logrus"
 
 	"github/jungwinter/codeowners"
@@ -24,15 +25,14 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
+	// TODO: Support enterprise github client
 	cli := codeowners.NewGitHubClient(ctx, "")
+	// TODO: Pass by commandline argument
 	repos, err := codeowners.ListActivatedRepositories(ctx, cli, "org")
 	if err != nil {
 		return err
 	}
 
-	// temp
-	//r, _, _ := cli.Repositories.Get(ctx, "org", "repo")
-	//repos := []*github.Repository{r}
 	for _, r := range repos {
 		content, err := codeowners.GetCodeownersContent(ctx, cli, r)
 		if errors.Cause(err) == codeowners.ErrNotFound {
@@ -48,6 +48,7 @@ func run() error {
 			return err
 		}
 
+		// TODO: Pass by commandline argument
 		o, n := "a", "b"
 		replaced := codeowners.ReplaceAll(s, o, n)
 		if s == replaced {
@@ -62,10 +63,13 @@ func run() error {
 			return err
 		}
 
+		// TODO: Pass by commandline option (e.g. --pr-body "text")
 		body := `
 Update codeowners.
 `
+		// TODO: Pass by commandline option (e.g. --pr-title "text")
 		if _, err := codeowners.OpenPR(ctx, cli, r, "pr title", "update-codeowners", body, &github.ReviewersRequest{
+			// TODO: Request review "a", "b" either person or team
 			Reviewers:     []string{"a"},
 			TeamReviewers: []string{"b"},
 		}); err != nil {

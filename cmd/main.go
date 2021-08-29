@@ -18,12 +18,25 @@ func main() {
 		PrettyPrint:      false,
 	})
 
-	if err := run(); err != nil {
-		log.WithError(err).Fatal("failed to run")
+	if err := inspect(); err != nil {
+		log.WithError(err).Fatal("failed to inspect")
 	}
 }
 
-func run() error {
+func inspect() error {
+	ctx := context.Background()
+	// TODO: Support enterprise github client
+	cli := codeowners.NewGitHubClient(ctx, "")
+
+	owners, err := codeowners.Inspect(ctx, cli, "")
+	if err != nil {
+		return err
+	}
+	log.WithField("owners", owners).Info("finished to inspect")
+	return nil
+}
+
+func replace() error {
 	ctx := context.Background()
 	// TODO: Support enterprise github client
 	cli := codeowners.NewGitHubClient(ctx, "")

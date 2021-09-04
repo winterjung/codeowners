@@ -21,6 +21,9 @@ func main() {
 	if err := inspect(); err != nil {
 		log.WithError(err).Fatal("failed to inspect")
 	}
+	if err := replace(); err != nil {
+		log.WithError(err).Fatal("failed to replace")
+	}
 }
 
 func inspect() error {

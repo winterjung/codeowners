@@ -157,10 +157,7 @@ func diff(a, b []string) []string {
 	}
 
 	for _, k := range b {
-		k = strings.ToLower(k)
-		if _, ok := m[k]; ok {
-			delete(m, k)
-		}
+		delete(m, strings.ToLower(k))
 	}
 
 	d := make([]string, 0, len(m))

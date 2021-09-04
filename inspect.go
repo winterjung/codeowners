@@ -15,10 +15,25 @@ func Inspect(ctx context.Context, cli *github.Client, owner string) ([]string, e
 		return nil, err
 	}
 
-	// TODO: Fetch current people in org
-	// TODO: Fetch current teams in org
-	// TODO: Diff
-	return owners, nil
+	users, err := ListMembers(ctx, cli, owner)
+	if err != nil {
+		return nil, err
+	}
+	userNames := make([]string, len(users))
+	for i, user := range users {
+		userNames[i] = user.GetLogin()
+	}
+
+	teams, err := ListTeams(ctx, cli, owner)
+	if err != nil {
+		return nil, err
+	}
+	teamNames := make([]string, len(teams))
+	for i, team := range teams {
+		teamNames[i] = team.GetSlug()
+	}
+
+	return diff(owners, append(userNames, teamNames...)), nil
 }
 
 func listAllCodeowners(ctx context.Context, cli *github.Client, owner string) ([]string, error) {
@@ -94,4 +109,25 @@ func flatten(sss ...[]string) []string {
 		ss = append(ss, elem...)
 	}
 	return ss
+}
+
+func diff(a, b []string) []string {
+	m := make(map[string]string)
+	for _, k := range a {
+		m[strings.ToLower(k)] = k
+	}
+
+	for _, k := range b {
+		k = strings.ToLower(k)
+		if _, ok := m[k]; ok {
+			delete(m, k)
+		}
+	}
+
+	d := make([]string, 0, len(m))
+	for _, v := range m {
+		d = append(d, v)
+	}
+	sort.Strings(d)
+	return d
 }

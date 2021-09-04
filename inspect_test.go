@@ -222,3 +222,94 @@ func Test_set(t *testing.T) {
 		})
 	}
 }
+
+func Test_flatten(t *testing.T) {
+	cases := []struct {
+		name     string
+		given    [][]string
+		expected []string
+	}{
+		{
+			name:     "nil",
+			given:    nil,
+			expected: []string{},
+		},
+		{
+			name:     "empty",
+			given:    [][]string{{}},
+			expected: []string{},
+		},
+		{
+			name:     "one",
+			given:    [][]string{{"a"}},
+			expected: []string{"a"},
+		},
+		{
+			name:     "many",
+			given:    [][]string{{"a"}, {"b", "c"}, {"d"}},
+			expected: []string{"a", "b", "c", "d"},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := flatten(tc.given...)
+
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func Test_diff(t *testing.T) {
+	cases := []struct {
+		name     string
+		a        []string
+		b        []string
+		expected []string
+	}{
+		{
+			name:     "a - b",
+			a:        []string{"a", "b"},
+			b:        []string{"b", "c"},
+			expected: []string{"a"},
+		},
+		{
+			name:     "all diff",
+			a:        []string{"a", "b"},
+			b:        []string{"c", "d"},
+			expected: []string{"a", "b"},
+		},
+		{
+			name:     "equal",
+			a:        []string{"a", "b"},
+			b:        []string{"a", "b"},
+			expected: []string{},
+		},
+		{
+			name:     "case insensitive",
+			a:        []string{"a", "B"},
+			b:        []string{"A", "b"},
+			expected: []string{},
+		},
+		{
+			name:     "nil a",
+			a:        nil,
+			b:        []string{"b"},
+			expected: []string{},
+		},
+		{
+			name:     "nil b",
+			a:        []string{"A", "b"},
+			b:        nil,
+			expected: []string{"A", "b"},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := diff(tc.a, tc.b)
+
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}

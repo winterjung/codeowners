@@ -131,6 +131,13 @@ func TestReplace(t *testing.T) {
 			new:      "b",
 			expected: "* @b",
 		},
+		{
+			name:     "case insensitive for old",
+			s:        "* @A @C",
+			old:      "a",
+			new:      "B",
+			expected: "* @B @C",
+		},
 	}
 	for _, tc := range cases {
 		tc := tc

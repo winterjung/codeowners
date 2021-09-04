@@ -23,7 +23,7 @@ func Test_listAllCodeowners(t *testing.T) {
 	cases := []struct {
 		name       string
 		expectFunc func(http.ResponseWriter, *http.Request)
-		expected   []string
+		expected   map[string]*Codeowner
 	}{
 		{
 			name: "no codeowner file",
@@ -55,7 +55,7 @@ func Test_listAllCodeowners(t *testing.T) {
 				}
 				t.Errorf("%s, method: %s, request uri: %s", "should not reach here", r.Method, r.RequestURI)
 			},
-			expected: nil,
+			expected: map[string]*Codeowner{},
 		},
 		{
 			name: "well merged",
@@ -106,7 +106,24 @@ func Test_listAllCodeowners(t *testing.T) {
 				}
 				t.Errorf("%s, method: %s, request uri: %s", "should not reach here", r.Method, r.RequestURI)
 			},
-			expected: []string{"a", "b", "c", "team/a"},
+			expected: map[string]*Codeowner{
+				"a": {
+					Name:     "a",
+					OwnRepos: []string{mockRepo, mockRepo2},
+				},
+				"b": {
+					Name:     "b",
+					OwnRepos: []string{mockRepo, mockRepo2},
+				},
+				"c": {
+					Name:     "c",
+					OwnRepos: []string{mockRepo2},
+				},
+				"team/a": {
+					Name:     "team/a",
+					OwnRepos: []string{mockRepo},
+				},
+			},
 		},
 		{
 			name: "empty repos",
@@ -118,7 +135,7 @@ func Test_listAllCodeowners(t *testing.T) {
 					require.NoError(t, err)
 				}
 			},
-			expected: nil,
+			expected: map[string]*Codeowner{},
 		},
 	}
 	for _, tc := range cases {
@@ -138,7 +155,10 @@ func Test_listAllCodeowners(t *testing.T) {
 			got, err := listAllCodeowners(ctx, mockGithubCli, mockOwner)
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, got)
+			for k, v := range tc.expected {
+				assert.Contains(t, got, k)
+				assert.ElementsMatch(t, got[k].OwnRepos, v.OwnRepos, fmt.Sprintf("%s: [%s] != %s: [%s]", k, got[k].OwnRepos, k, v.OwnRepos))
+			}
 		})
 	}
 }

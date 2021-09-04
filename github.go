@@ -12,6 +12,8 @@ import (
 
 const (
 	prBranch = "update-codeowners"
+
+	defaultPerPage = 100
 )
 
 var (
@@ -34,7 +36,8 @@ func ListActivatedRepositories(ctx context.Context, cli *github.Client, owner st
 	opt := &github.RepositoryListByOrgOptions{
 		Type: "private",
 		ListOptions: github.ListOptions{
-			Page: 0,
+			Page:    0,
+			PerPage: defaultPerPage,
 		},
 	}
 
@@ -66,7 +69,7 @@ func ListActivatedRepositories(ctx context.Context, cli *github.Client, owner st
 
 func GetCodeownersContent(ctx context.Context, cli *github.Client, r *github.Repository) (*github.RepositoryContent, error) {
 	// If codeowner updating branch is already exist, use it's ref
-	exist, err := isBranchExists(cli, ctx, r, prBranch)
+	exist, err := isBranchExists(ctx, cli, r, prBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +98,7 @@ func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, 
 		owner = r.GetOwner().GetLogin()
 		name  = r.GetName()
 	)
-	exist, err := isBranchExists(cli, ctx, r, prBranch)
+	exist, err := isBranchExists(ctx, cli, r, prBranch)
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,57 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 	return pr, nil
 }
 
-func isBranchExists(cli *github.Client, ctx context.Context, r *github.Repository, branch string) (bool, error) {
+func ListMembers(ctx context.Context, cli *github.Client, owner string) ([]*github.User, error) {
+	opt := &github.ListMembersOptions{
+		ListOptions: github.ListOptions{
+			Page:    0,
+			PerPage: defaultPerPage,
+		},
+	}
+
+	var all []*github.User
+	for {
+		uu, resp, err := cli.Organizations.ListMembers(ctx, owner, opt)
+		if err != nil {
+			return nil, errors.Wrap(err, "cli.Organizations.ListMembers")
+		}
+		all = append(all, uu...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.ListOptions.Page = resp.NextPage
+	}
+
+	return all, nil
+}
+
+func ListTeams(ctx context.Context, cli *github.Client, owner string) ([]*github.Team, error) {
+	opt := &github.ListOptions{
+		Page:    0,
+		PerPage: defaultPerPage,
+	}
+
+	var all []*github.Team
+	for {
+		tt, resp, err := cli.Teams.ListTeams(ctx, owner, opt)
+		if err != nil {
+			return nil, errors.Wrap(err, "cli.Teams.ListTeams")
+		}
+		all = append(all, tt...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.Page = resp.NextPage
+	}
+
+	return all, nil
+}
+
+func isBranchExists(ctx context.Context, cli *github.Client, r *github.Repository, branch string) (bool, error) {
 	_, res, err := cli.Repositories.GetBranch(ctx, r.GetOwner().GetLogin(), r.GetName(), branch)
 	if err != nil {
 		if res != nil && res.StatusCode == http.StatusNotFound {

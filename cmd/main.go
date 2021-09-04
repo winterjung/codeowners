@@ -18,12 +18,30 @@ func main() {
 		PrettyPrint:      false,
 	})
 
-	if err := run(); err != nil {
-		log.WithError(err).Fatal("failed to run")
+	if err := inspect(); err != nil {
+		log.WithError(err).Fatal("failed to inspect")
+	}
+	if err := replace(); err != nil {
+		log.WithError(err).Fatal("failed to replace")
 	}
 }
 
-func run() error {
+func inspect() error {
+	ctx := context.Background()
+	// TODO: Support enterprise github client
+	cli := codeowners.NewGitHubClient(ctx, "")
+
+	owners, err := codeowners.Inspect(ctx, cli, "")
+	if err != nil {
+		return err
+	}
+	for _, o := range owners {
+		log.WithField("owner", o.Name).WithField("repos", o.OwnRepos).Info("should be replaced")
+	}
+	return nil
+}
+
+func replace() error {
 	ctx := context.Background()
 	// TODO: Support enterprise github client
 	cli := codeowners.NewGitHubClient(ctx, "")

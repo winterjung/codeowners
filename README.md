@@ -2,6 +2,18 @@
 
 ## Usage
 
+### inspect
+
+Inspect codeowners should be removed in organization.
+
+```console
+$ codeowners inspect org
+```
+
+### replace
+
+Replace codeowners old to new one.
+
 ```console
 $ codeowners replace org a b
 ```

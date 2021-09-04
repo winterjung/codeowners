@@ -186,6 +186,44 @@ func Test_parseCodeowners(t *testing.T) {
 	}
 }
 
+func Test_groupByCodeowner(t *testing.T) {
+	t.Run("merge", func(t *testing.T) {
+		m := map[string][]string{
+			"a-repo": {"a", "b", "c"},
+			"b-repo": {"b", "c", "d"},
+			"c-repo": {"e"},
+		}
+		expected := map[string]*Codeowner{
+			"a": {
+				Name:     "a",
+				OwnRepos: []string{"a-repo"},
+			},
+			"b": {
+				Name:     "b",
+				OwnRepos: []string{"a-repo", "b-repo"},
+			},
+			"c": {
+				Name:     "c",
+				OwnRepos: []string{"a-repo", "b-repo"},
+			},
+			"d": {
+				Name:     "d",
+				OwnRepos: []string{"b-repo"},
+			},
+			"e": {
+				Name:     "e",
+				OwnRepos: []string{"c-repo"},
+			},
+		}
+
+		got := groupByCodeowner(m)
+		for k, v := range expected {
+			assert.Contains(t, got, k)
+			assert.ElementsMatch(t, got[k].OwnRepos, v.OwnRepos, fmt.Sprintf("%s: [%s] != %s: [%s]", k, got[k].OwnRepos, k, v.OwnRepos))
+		}
+	})
+}
+
 func Test_set(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -217,43 +255,6 @@ func Test_set(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			got := set(tc.given)
-
-			assert.Equal(t, tc.expected, got)
-		})
-	}
-}
-
-func Test_flatten(t *testing.T) {
-	cases := []struct {
-		name     string
-		given    [][]string
-		expected []string
-	}{
-		{
-			name:     "nil",
-			given:    nil,
-			expected: []string{},
-		},
-		{
-			name:     "empty",
-			given:    [][]string{{}},
-			expected: []string{},
-		},
-		{
-			name:     "one",
-			given:    [][]string{{"a"}},
-			expected: []string{"a"},
-		},
-		{
-			name:     "many",
-			given:    [][]string{{"a"}, {"b", "c"}, {"d"}},
-			expected: []string{"a", "b", "c", "d"},
-		},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			got := flatten(tc.given...)
 
 			assert.Equal(t, tc.expected, got)
 		})

@@ -32,7 +32,9 @@ func inspect() error {
 	if err != nil {
 		return err
 	}
-	log.WithField("owners", owners).Info("finished to inspect")
+	for _, o := range owners {
+		log.WithField("owner", o.Name).WithField("repos", o.OwnRepos).Info("should be replaced")
+	}
 	return nil
 }
 

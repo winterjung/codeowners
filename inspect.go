@@ -2,10 +2,11 @@ package codeowners
 
 import (
 	"context"
-	"github.com/google/go-github/v35/github"
-	"github.com/pkg/errors"
 	"sort"
 	"strings"
+
+	"github.com/google/go-github/v35/github"
+	"github.com/pkg/errors"
 )
 
 func Inspect(ctx context.Context, cli *github.Client, owner string) ([]string, error) {

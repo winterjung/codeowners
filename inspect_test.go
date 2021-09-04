@@ -1,9 +1,147 @@
 package codeowners
 
 import (
-	"github.com/stretchr/testify/assert"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/google/go-github/v35/github"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func Test_listAllCodeowners(t *testing.T) {
+	const (
+		mockOwner = "some-org"
+		mockRepo  = "some-repo"
+		mockRepo2 = "some-repo-2"
+	)
+
+	cases := []struct {
+		name       string
+		expectFunc func(http.ResponseWriter, *http.Request)
+		expected   []string
+	}{
+		{
+			name: "no codeowner file",
+			expectFunc: func(rw http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/orgs/%s/repos", mockOwner) {
+					rw.WriteHeader(http.StatusOK)
+					rw.Header().Set("Content-Type", "application/json")
+					_, err := io.WriteString(rw, fmt.Sprintf(`[
+	{
+		"owner": {"login": "%s"},
+		"name": "%s",
+		"default_branch": "main"
+	}
+]`, mockOwner, mockRepo))
+					require.NoError(t, err)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/branches/%s", mockOwner, mockRepo, prBranch) {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/contents/%s", mockOwner, mockRepo, ".github/CODEOWNERS") {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/contents/%s", mockOwner, mockRepo, "CODEOWNERS") {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				t.Errorf("%s, method: %s, request uri: %s", "should not reach here", r.Method, r.RequestURI)
+			},
+			expected: nil,
+		},
+		{
+			name: "well merged",
+			expectFunc: func(rw http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/orgs/%s/repos", mockOwner) {
+					rw.WriteHeader(http.StatusOK)
+					rw.Header().Set("Content-Type", "application/json")
+					_, err := io.WriteString(rw, fmt.Sprintf(`[
+	{
+		"owner": {"login": "%s"},
+		"name": "%s",
+		"default_branch": "main"
+	},
+	{
+		"owner": {"login": "%s"},
+		"name": "%s",
+		"default_branch": "main"
+	}
+]`, mockOwner, mockRepo, mockOwner, mockRepo2))
+					require.NoError(t, err)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/branches/%s", mockOwner, mockRepo, prBranch) {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/branches/%s", mockOwner, mockRepo2, prBranch) {
+					rw.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/contents/%s", mockOwner, mockRepo, ".github/CODEOWNERS") {
+					rw.WriteHeader(http.StatusOK)
+					rw.Header().Set("Content-Type", "application/json")
+					_, err := io.WriteString(rw, `{
+  "content": "* @a\n.github @b @team/a"
+}`)
+					require.NoError(t, err)
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == fmt.Sprintf("/api/v3/repos/%s/%s/contents/%s", mockOwner, mockRepo2, ".github/CODEOWNERS") {
+					rw.WriteHeader(http.StatusOK)
+					rw.Header().Set("Content-Type", "application/json")
+					_, err := io.WriteString(rw, `{
+  "content": "* @b @c\n.github @a @c\n"
+}`)
+					require.NoError(t, err)
+					return
+				}
+				t.Errorf("%s, method: %s, request uri: %s", "should not reach here", r.Method, r.RequestURI)
+			},
+			expected: []string{"a", "b", "c", "team/a"},
+		},
+		{
+			name: "empty repos",
+			expectFunc: func(rw http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet && r.RequestURI == fmt.Sprintf("/api/v3/orgs/%s/repos", mockOwner) {
+					rw.WriteHeader(http.StatusOK)
+					rw.Header().Set("Content-Type", "application/json")
+					_, err := io.WriteString(rw, `[]`)
+					require.NoError(t, err)
+				}
+			},
+			expected: nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(
+				http.HandlerFunc(
+					tc.expectFunc,
+				),
+			)
+			defer server.Close()
+
+			mockGithubCli, err := github.NewEnterpriseClient(server.URL, server.URL, server.Client())
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			got, err := listAllCodeowners(ctx, mockGithubCli, mockOwner)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
 
 func Test_parseCodeowners(t *testing.T) {
 

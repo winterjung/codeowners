@@ -28,7 +28,9 @@ func Replace(s, old, new string) string {
 	if !strings.Contains(s, mentionPrefix) {
 		return s
 	}
-	if !strings.Contains(s, old) {
+
+	old = strings.ToLower(old)
+	if !strings.Contains(strings.ToLower(s), old) {
 		return s
 	}
 
@@ -37,7 +39,7 @@ func Replace(s, old, new string) string {
 	stack, cands := []string{cc[0]}, cc[1:]
 	for _, name := range cands {
 		// identifier
-		n := strings.TrimSpace(name)
+		n := strings.TrimSpace(strings.ToLower(name))
 
 		// non target first seen owner
 		if _, ok := m[n]; n != old && !ok {
@@ -46,14 +48,14 @@ func Replace(s, old, new string) string {
 			continue
 		}
 
-		name = strings.ReplaceAll(name, old, new)
-		n = strings.TrimSpace(name)
+		replaced := strings.ReplaceAll(strings.ToLower(name), old, new)
+		n = strings.TrimSpace(strings.ToLower(replaced))
 		if _, ok := m[n]; ok {
 			continue
 		}
 
 		m[n] = struct{}{}
-		stack = append(stack, name)
+		stack = append(stack, replaced)
 	}
 
 	// remove trailing whitespace

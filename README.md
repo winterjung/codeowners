@@ -25,6 +25,7 @@ If you want to replace `a` to `b`, command follows below rules.
 |before|after|description|
 |-|-|-|
 |`* @a`|`* @b`||
+|`* @A`|`* @b`|case insensitive|
 |`* @b @c @a`|`* @b @c`|keep priority|
 |`* @a @c @b`|`* @b @c`|promote to keep priority|
 |`* @a/a @a @b`|`* @a/a @b`|distinguish team with member|

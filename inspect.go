@@ -30,7 +30,7 @@ func Inspect(ctx context.Context, cli *github.Client, owner string) ([]string, e
 	}
 	teamNames := make([]string, len(teams))
 	for i, team := range teams {
-		teamNames[i] = team.GetSlug()
+		teamNames[i] = owner + "/" + team.GetSlug()
 	}
 
 	return diff(owners, append(userNames, teamNames...)), nil

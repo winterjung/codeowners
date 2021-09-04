@@ -12,6 +12,8 @@ import (
 
 const (
 	prBranch = "update-codeowners"
+
+	defaultPerPage = 100
 )
 
 var (
@@ -34,7 +36,8 @@ func ListActivatedRepositories(ctx context.Context, cli *github.Client, owner st
 	opt := &github.RepositoryListByOrgOptions{
 		Type: "private",
 		ListOptions: github.ListOptions{
-			Page: 0,
+			Page:    0,
+			PerPage: defaultPerPage,
 		},
 	}
 
@@ -159,7 +162,8 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 func ListMembers(ctx context.Context, cli *github.Client, owner string) ([]*github.User, error) {
 	opt := &github.ListMembersOptions{
 		ListOptions: github.ListOptions{
-			Page: 0,
+			Page:    0,
+			PerPage: defaultPerPage,
 		},
 	}
 
@@ -183,7 +187,8 @@ func ListMembers(ctx context.Context, cli *github.Client, owner string) ([]*gith
 
 func ListTeams(ctx context.Context, cli *github.Client, owner string) ([]*github.Team, error) {
 	opt := &github.ListOptions{
-		Page: 0,
+		Page:    0,
+		PerPage: defaultPerPage,
 	}
 
 	var all []*github.Team

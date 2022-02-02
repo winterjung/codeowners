@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v42/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -210,7 +210,7 @@ func ListTeams(ctx context.Context, cli *github.Client, owner string) ([]*github
 }
 
 func isBranchExists(ctx context.Context, cli *github.Client, r *github.Repository, branch string) (bool, error) {
-	_, res, err := cli.Repositories.GetBranch(ctx, r.GetOwner().GetLogin(), r.GetName(), branch)
+	_, res, err := cli.Repositories.GetBranch(ctx, r.GetOwner().GetLogin(), r.GetName(), branch, true)
 	if err != nil {
 		if res != nil && res.StatusCode == http.StatusNotFound {
 			return false, nil

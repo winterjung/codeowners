@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v42/github"
 	"github.com/pkg/errors"
 )
 

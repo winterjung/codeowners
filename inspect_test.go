@@ -268,7 +268,12 @@ func Test_set(t *testing.T) {
 		{
 			name:     "duplicates",
 			given:    []string{"b", "a", "c", "a"},
-			expected: []string{"a", "b", "c"},
+			expected: []string{"b", "a", "c"},
+		},
+		{
+			name:     "case sensitive",
+			given:    []string{"a", "A", "b", "B"},
+			expected: []string{"a", "A", "b", "B"},
 		},
 	}
 	for _, tc := range cases {

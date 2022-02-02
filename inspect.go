@@ -136,34 +136,35 @@ func set(ss []string) []string {
 	if len(ss) == 0 {
 		return nil
 	}
+	if len(ss) == 1 {
+		return ss
+	}
 
 	m := make(map[string]struct{})
+	unique := make([]string, 0, len(ss))
 	for _, s := range ss {
+		if _, ok := m[s]; ok {
+			continue
+		}
 		m[s] = struct{}{}
-	}
-
-	unique := make([]string, 0, len(m))
-	for s := range m {
 		unique = append(unique, s)
 	}
-	sort.Strings(unique)
 	return unique
 }
 
+// diff returns result of `a` not in `b` case insensitive.
 func diff(a, b []string) []string {
-	m := make(map[string]string)
-	for _, k := range a {
-		m[strings.ToLower(k)] = k
-	}
-
+	m := make(map[string]struct{}, len(b))
 	for _, k := range b {
-		delete(m, strings.ToLower(k))
+		m[strings.ToLower(k)] = struct{}{}
 	}
 
-	d := make([]string, 0, len(m))
-	for _, v := range m {
-		d = append(d, v)
+	unique := make([]string, 0, len(a))
+	for _, k := range a {
+		if _, ok := m[strings.ToLower(k)]; ok {
+			continue
+		}
+		unique = append(unique, k)
 	}
-	sort.Strings(d)
-	return d
+	return unique
 }

@@ -31,7 +31,7 @@ func inspect() error {
 	// TODO: Support enterprise github client
 	cli := codeowners.NewGitHubClient(ctx, "")
 
-	owners, err := codeowners.Inspect(ctx, cli, "")
+	owners, err := codeowners.Inspect(ctx, cli, "org")
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,24 @@ func replace() error {
 		return err
 	}
 
+	// TODO: Pass by commandline argument
+	allowlist := map[string]struct{}{
+		"repo": {},
+	}
+
+	// TODO: Pass by commandline argument
+	denylist := map[string]struct{}{
+		"repo": {},
+	}
 	for _, r := range repos {
+		if _, ok := denylist[r.GetName()]; ok {
+			log.WithField("repo", r.GetName()).Info("denied")
+			continue
+		}
+		if _, ok := allowlist[r.GetName()]; !ok {
+			log.WithField("repo", r.GetName()).Info("denied")
+			continue
+		}
 		content, err := codeowners.GetCodeownersContent(ctx, cli, r)
 		if errors.Cause(err) == codeowners.ErrNotFound {
 			log.WithField("repo", r.GetName()).Info("no codeowner file")

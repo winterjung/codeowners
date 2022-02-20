@@ -14,8 +14,8 @@ run:
 .PHONY: format
 ## format: format files
 format:
-	@go get golang.org/x/tools/cmd/goimports
-	goimports -local github.com/jungwinter -w .
+	@go install github.com/incu6us/goimports-reviser/v2@latest
+	goimports-reviser -file-path ./**/*.go -rm-unused
 	gofmt -s -w .
 	go mod tidy
 

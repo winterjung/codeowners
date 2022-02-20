@@ -143,7 +143,8 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 		Head:  github.String(head),
 		Base:  r.DefaultBranch,
 		Body:  github.String(body),
-		Draft: github.Bool(false),
+		// TODO: Provider `--draft` cli option
+		Draft: github.Bool(true),
 	}
 	pr, resp, err := cli.PullRequests.Create(ctx, r.GetOwner().GetLogin(), r.GetName(), req)
 	if err != nil {

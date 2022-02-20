@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v42/github"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
@@ -147,6 +149,12 @@ func OpenPR(ctx context.Context, cli *github.Client, r *github.Repository, prTit
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusUnprocessableEntity && strings.Contains(err.Error(), "A pull request already exists") {
 			return nil, nil
+		}
+		if resp != nil && resp.StatusCode == http.StatusForbidden && strings.Contains(err.Error(), "You have exceeded a secondary rate limit") {
+			log.WithField("repo", r.GetName()).Info("waiting rate limit")
+			// TODO: Provide cli option
+			time.Sleep(1 * time.Minute)
+			return OpenPR(ctx, cli, r, prTitle, head, body, reviewReq)
 		}
 		return nil, errors.Wrap(err, "cli.PullRequests.Create")
 	}

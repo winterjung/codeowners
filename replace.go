@@ -1,6 +1,8 @@
 package codeowners
 
-import "strings"
+import (
+	"strings"
+)
 
 const (
 	sep = "\n"
@@ -50,6 +52,9 @@ func Replace(s, old, new string) string {
 
 		replaced := strings.ReplaceAll(strings.ToLower(name), old, new)
 		n = strings.TrimSpace(strings.ToLower(replaced))
+		if n == "" {
+			continue
+		}
 		if _, ok := m[n]; ok {
 			continue
 		}

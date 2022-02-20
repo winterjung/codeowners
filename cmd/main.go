@@ -94,6 +94,10 @@ func replace() error {
 		log.WithField("repo", r.GetName()).WithField("after", replaced).Info("replaced")
 
 		msg := github.String(fmt.Sprintf("Update %s to %s", o, n))
+		// TODO: Support remove command
+		if n == "" {
+			msg = github.String(fmt.Sprintf("Remove %s", o))
+		}
 		if err := codeowners.CreatePatch(ctx, cli, r, content, replaced, msg); err != nil {
 			return err
 		}

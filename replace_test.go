@@ -138,6 +138,27 @@ func TestReplace(t *testing.T) {
 			new:      "B",
 			expected: "* @B @C",
 		},
+		{
+			name:     "remove owner",
+			s:        "* @a @b @c",
+			old:      "b",
+			new:      "",
+			expected: "* @a @c",
+		},
+		{
+			name:     "remove owner with tab",
+			s:        "* @a @b\t@c",
+			old:      "b",
+			new:      "",
+			expected: "* @a @c",
+		},
+		{
+			name:     "remove all owner",
+			s:        "* @b",
+			old:      "b",
+			new:      "",
+			expected: "*",
+		},
 	}
 	for _, tc := range cases {
 		tc := tc

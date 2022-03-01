@@ -8,8 +8,6 @@ import (
 	"github.com/google/go-github/v42/github"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
-	"github/jungwinter/codeowners"
 )
 
 func main() {
@@ -29,9 +27,9 @@ func main() {
 func inspect() error {
 	ctx := context.Background()
 	// TODO: Support enterprise github client
-	cli := codeowners.NewGitHubClient(ctx, "")
+	cli := NewGitHubClient(ctx, "")
 
-	owners, err := codeowners.Inspect(ctx, cli, "org")
+	owners, err := Inspect(ctx, cli, "org")
 	if err != nil {
 		return err
 	}
@@ -44,9 +42,9 @@ func inspect() error {
 func replace() error {
 	ctx := context.Background()
 	// TODO: Support enterprise github client
-	cli := codeowners.NewGitHubClient(ctx, "")
+	cli := NewGitHubClient(ctx, "")
 	// TODO: Pass by commandline argument
-	repos, err := codeowners.ListActivatedRepositories(ctx, cli, "org")
+	repos, err := ListActivatedRepositories(ctx, cli, "org")
 	if err != nil {
 		return err
 	}
@@ -69,8 +67,8 @@ func replace() error {
 			log.WithField("repo", r.GetName()).Info("denied")
 			continue
 		}
-		content, err := codeowners.GetCodeownersContent(ctx, cli, r)
-		if errors.Cause(err) == codeowners.ErrNotFound {
+		content, err := GetCodeownersContent(ctx, cli, r)
+		if errors.Cause(err) == ErrNotFound {
 			log.WithField("repo", r.GetName()).Info("no codeowner file")
 			continue
 		}
@@ -85,7 +83,7 @@ func replace() error {
 
 		// TODO: Pass by commandline argument
 		o, n := "a", "b"
-		replaced := codeowners.ReplaceAll(s, o, n)
+		replaced := ReplaceAll(s, o, n)
 		if s == replaced {
 			log.WithField("repo", r.GetName()).Info("no target owner")
 			continue
@@ -98,7 +96,7 @@ func replace() error {
 		if n == "" {
 			msg = github.String(fmt.Sprintf("Remove %s", o))
 		}
-		if err := codeowners.CreatePatch(ctx, cli, r, content, replaced, msg); err != nil {
+		if err := CreatePatch(ctx, cli, r, content, replaced, msg); err != nil {
 			return err
 		}
 
@@ -107,7 +105,7 @@ func replace() error {
 Update codeowners.
 `
 		// TODO: Pass by commandline option (e.g. --pr-title "text")
-		if _, err := codeowners.OpenPR(ctx, cli, r, "pr title", "update-codeowners", body, &github.ReviewersRequest{
+		if _, err := OpenPR(ctx, cli, r, "pr title", "update-codeowners", body, &github.ReviewersRequest{
 			// TODO: Request review "a", "b" either person or team
 			Reviewers:     []string{"a"},
 			TeamReviewers: []string{"b"},

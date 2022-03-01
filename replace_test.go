@@ -1,4 +1,4 @@
-package codeowners
+package main
 
 import (
 	"testing"

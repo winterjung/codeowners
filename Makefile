@@ -27,14 +27,14 @@ format:
 .PHONY: test
 ## test: run tests
 test:
-	@go get github.com/rakyll/gotest
-	gotest -race -cover -v ./...
+	@go install github.com/rakyll/gotest@latest
+	gotest -race -cover ./...
 
 .PHONY: coverage
 ## coverage: run tests with coverage
 coverage:
-	@go get github.com/rakyll/gotest
-	gotest -race -coverprofile=coverage.txt -covermode=atomic -v ./...
+	@go install github.com/rakyll/gotest@latest
+	gotest -race -coverprofile=coverage.txt -covermode=atomic ./...
 
 .PHONY: lint
 ## lint: check everything's okay
@@ -45,11 +45,10 @@ lint:
 .PHONY: generate
 ## generate: generate source code for mocking
 generate:
-	@go get golang.org/x/tools/cmd/stringer
-	@go get github.com/golang/mock/gomock
-	@go install github.com/golang/mock/mockgen
+	@go install golang.org/x/tools/cmd/stringer@latest
+	@go install github.com/golang/mock/mockgen@latest
 	go generate ./...
-	${MAKE} format
+	$(MAKE) format
 
 .PHONY: help
 ## help: prints this help message

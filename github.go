@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v42/github"
+	"github.com/google/go-github/v48/github"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -120,6 +120,10 @@ func CreatePatch(ctx context.Context, cli *github.Client, r *github.Repository, 
 		if _, _, err := cli.Git.CreateRef(ctx, owner, name, prRef); err != nil {
 			return errors.Wrap(err, "cli.Git.CreateRef")
 		}
+		log.Info("success to create ref")
+	}
+	if exist {
+		log.Infof("skipped creation because of already exist branch")
 	}
 
 	if commitMsg == nil {

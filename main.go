@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/go-github/v42/github"
+	"github.com/google/go-github/v48/github"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -112,6 +112,7 @@ Update codeowners.
 		}); err != nil {
 			return err
 		}
+		log.WithField("repo", r.GetName()).Info("pr is opened")
 
 		time.Sleep(3 * time.Second)
 	}
